@@ -1,63 +1,52 @@
-#!/usr/bin/env python3
-
-from random import randint, choice as rc
-
-from faker import Faker
-
 from app import app
-from models import db, Recipe, User
-
-fake = Faker()
+from config import db
+from models import User, Recipe
 
 with app.app_context():
 
-    print("Deleting all records...")
-    Recipe.query.delete()
-    User.query.delete()
+    db.drop_all()
+    db.create_all()
 
-    fake = Faker()
+    user1 = User(
+        username="chef_john",
+        image_url="https://i.pravatar.cc/300",
+        bio="Professional chef"
+    )
+    user1.password_hash = "password123"
 
-    print("Creating users...")
+    user2 = User(
+        username="foodie_sarah",
+        image_url="https://i.pravatar.cc/301",
+        bio="I love cooking"
+    )
+    user2.password_hash = "password123"
 
-    # make sure users have unique usernames
-    users = []
-    usernames = []
-
-    for i in range(20):
-        
-        username = fake.first_name()
-        while username in usernames:
-            username = fake.first_name()
-        usernames.append(username)
-
-        user = User(
-            username=username,
-            bio=fake.paragraph(nb_sentences=3),
-            image_url=fake.url(),
-        )
-
-        user.password_hash = user.username + 'password'
-
-        users.append(user)
-
-    db.session.add_all(users)
-
-    print("Creating recipes...")
-    recipes = []
-    for i in range(100):
-        instructions = fake.paragraph(nb_sentences=8)
-        
-        recipe = Recipe(
-            title=fake.sentence(),
-            instructions=instructions,
-            minutes_to_complete=randint(15,90),
-        )
-
-        recipe.user = rc(users)
-
-        recipes.append(recipe)
-
-    db.session.add_all(recipes)
-    
+    db.session.add_all([user1, user2])
     db.session.commit()
-    print("Complete.")
+
+    recipe1 = Recipe(
+        title="Creamy Pasta",
+        instructions="""
+        Boil pasta until tender. Prepare creamy sauce
+        using butter, garlic, milk, and parmesan cheese.
+        Combine pasta and sauce thoroughly before serving.
+        """,
+        minutes_to_complete=30,
+        user_id=user1.id
+    )
+
+    recipe2 = Recipe(
+        title="Chicken Curry",
+        instructions="""
+        Cook onions, garlic, ginger, and spices together.
+        Add chicken and simmer with coconut milk until
+        fully cooked and flavorful before serving.
+        """,
+        minutes_to_complete=45,
+        user_id=user2.id
+    )
+
+    db.session.add_all([recipe1, recipe2])
+    db.session.commit()
+
+    print("Database seeded successfully!")
